@@ -1,157 +1,292 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Radio, BarChart3, Upload, Music2, Disc3, Sparkles, ArrowRight, PlayCircle, Facebook, Twitter, Linkedin, Instagram, Phone, Mail, MapPin } from "lucide-react";
-import heroImage from "@/assets/hero-studio.jpg";
-import fUpload from "@/assets/f-upload.jpg";
-import fCatalog from "@/assets/f-catalog.jpg";
-import fAnalytics from "@/assets/f-analytics.jpg";
-import fAlbum from "@/assets/f-album.jpg";
-import fProfile from "@/assets/f-profile.jpg";
-import fPremium from "@/assets/f-premium.jpg";
-import wUpload from "@/assets/w-upload.jpg";
-import wOrganize from "@/assets/w-organize.jpg";
-import wAnalyze from "@/assets/w-analyze.jpg";
-import wGrow from "@/assets/w-grow.jpg";
-import creatorsCta from "@/assets/creators-cta.jpg";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { Play, BarChart2, MessageCircle, DollarSign, ChevronRight, Menu, X } from "lucide-react";
+import AuthModal, { AuthMode } from "../components/AuthModal";
 
 export const Route = createFileRoute("/")({
-  component: Landing,
+  component: Index,
 });
 
-function Landing() {
+const CONCERT_IMG = "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop&auto=format";
+const CONCERT_IMG2 = "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=800&h=600&fit=crop&auto=format";
+const GAMING_IMG = "https://images.unsplash.com/photo-1626218174358-7769486c4b79?w=800&h=600&fit=crop&auto=format";
+const PODCAST_IMG = "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&h=600&fit=crop&auto=format";
+
+const stats = [
+  { value: "2M+", label: "Active Creators" },
+  { value: "140+", label: "Countries" },
+  { value: "98%", label: "Satisfaction Rate" },
+  { value: "$480M", label: "Creator Earnings" },
+];
+
+const features = [
+  {
+    icon: BarChart2,
+    title: "Real-Time Insights",
+    desc: "Track your audience with live analytics. Know what resonates, when to post, and who's watching.",
+    stat: "↑ 3.4× avg. reach",
+  },
+  {
+    icon: MessageCircle,
+    title: "Boost Engagement",
+    desc: "Connect with your fans through interactive polls, live Q&As, and direct messaging tools.",
+    stat: "↑ 62% interaction",
+  },
+  {
+    icon: DollarSign,
+    title: "Monetize Content",
+    desc: "Unlock subscriptions, tipping, brand deals, and merchandise — all in one creator dashboard.",
+    stat: "↑ 5× revenue",
+  },
+];
+
+const testimonials = [
+  {
+    name: "Aria Chen",
+    role: "Music Producer · 1.2M followers",
+    quote: "Now-Play changed how I connect with my audience. The analytics alone are worth everything.",
+    img: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=80&h=80&fit=crop&auto=format",
+  },
+  {
+    name: "Marcus Webb",
+    role: "Gaming Streamer · 800K followers",
+    quote: "I tripled my monthly revenue in 6 months. The monetization tools are genuinely the best in the space.",
+    img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&auto=format",
+  },
+  {
+    name: "Solène Dupont",
+    role: "Podcast Host · 420K listeners",
+    quote: "Finally a platform that treats creators like partners, not content machines.",
+    img: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&auto=format",
+  },
+];
+
+function WaveformSVG() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Nav */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-primary-gradient shadow-glow ring-1 ring-primary/40">
-              <span className="text-[10px] font-black tracking-wider text-primary-foreground">CBM</span>
+    <svg viewBox="0 0 1200 200" preserveAspectRatio="none" className="w-full h-full opacity-20" aria-hidden="true">
+      {Array.from({ length: 80 }).map((_, i) => {
+        const h = 20 + Math.sin(i * 0.4) * 50 + Math.sin(i * 0.15) * 30 + Math.random() * 20;
+        const x = (i / 80) * 1200;
+        return <rect key={i} x={x} y={100 - h / 2} width={10} height={h} rx={3} fill="var(--color-primary)" />;
+      })}
+    </svg>
+  );
+}
+
+function Index() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  function openAuth(mode: AuthMode) {
+    setAuthMode(mode);
+    setAuthOpen(true);
+    setMenuOpen(false);
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden" style={{ fontFamily: "var(--font-sans)" }}>
+      {/* NAV */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled ? "bg-background/95 backdrop-blur-md border-b border-border" : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <a href="#overview" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+              <Play className="w-4 h-4 text-primary-foreground fill-current ml-0.5" />
             </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-bold">Now Play</span>
-                <Radio className="h-3 w-3 text-primary" />
-              </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">for Creators</div>
-            </div>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#workflow" className="hover:text-foreground transition-colors">Workflow</a>
-            <a href="#creators" className="hover:text-foreground transition-colors">Creators</a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/auth" className="hidden sm:inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold text-foreground hover:bg-elevated">
-              Login
-            </Link>
-            <Link to="/auth" search={{ mode: "signup" }} className="inline-flex items-center rounded-full bg-primary-gradient px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow hover:brightness-110 transition">
-              Get Started
-            </Link>
+            <span className="text-foreground font-semibold tracking-tight" style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", letterSpacing: "0.05em" }}>
+              now-play
+            </span>
+          </a>
+
+          <div className="hidden md:flex items-center gap-8">
+            {[
+              { label: "Overview", href: "#overview" },
+              { label: "Features", href: "#features" },
+              { label: "Support", href: "#support" },
+            ].map((l) => (
+              <a key={l.label} href={l.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                {l.label}
+              </a>
+            ))}
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
+            <button onClick={() => openAuth("login")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Log In
+            </button>
+            <button
+              onClick={() => openAuth("signup")}
+              className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover-lift transition-colors"
+            >
+              Sign Up
+            </button>
+          </div>
+
+          <button className="md:hidden text-muted-foreground" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {menuOpen && (
+          <div className="md:hidden bg-background/98 border-b border-border px-6 py-6 flex flex-col gap-5">
+            {[
+              { label: "Overview", href: "#overview" },
+              { label: "Features", href: "#features" },
+              { label: "Support", href: "#support" },
+            ].map((l) => (
+              <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)} className="text-foreground font-medium">
+                {l.label}
+              </a>
+            ))}
+            <hr className="border-border" />
+            <button onClick={() => openAuth("login")} className="text-muted-foreground text-left">
+              Log In
+            </button>
+            <button onClick={() => openAuth("signup")} className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold text-center">
+              Sign Up
+            </button>
+          </div>
+        )}
+      </nav>
+
+      <style>{`html { scroll-behavior: smooth; }`}</style>
+
+      {/* HERO */}
+      <section id="overview" className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-hero-gradient">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute bottom-0 left-0 right-0 h-48">
+            <WaveformSVG />
           </div>
         </div>
-      </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-hero-gradient">
-        <div className="mx-auto max-w-7xl px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs text-muted-foreground">
-              <Sparkles className="h-3 w-3 text-primary" /> Built for musicians, DJs, producers &amp; podcasters
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold mb-6 tracking-wider uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              Now Live for Creators
             </div>
-            <h1 className="mt-6 text-5xl md:text-7xl font-black tracking-tight leading-[0.95]">
-              Your music.<br />
-              Your catalog.<br />
-              <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Your control.</span>
+            <h1
+              className="text-foreground leading-[0.9] mb-6"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3.5rem, 8vw, 6.5rem)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em" }}
+            >
+              Take Your <span className="text-primary">Content</span> to the Next Level
             </h1>
-            <p className="mt-6 max-w-lg text-lg text-muted-foreground leading-relaxed">
-              The premium creator dashboard for audio. Upload releases, manage your catalog, and
-              track performance — all in one professionally designed workspace.
+            <p className="text-muted-foreground text-lg leading-relaxed mb-10 max-w-xl">
+              Engage your audience like never before with Now-Play for Creators. The platform built for artists,
+              streamers, and storytellers who refuse to be ordinary.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/auth" search={{ mode: "signup" }} className="inline-flex items-center gap-2 rounded-full bg-primary-gradient px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow hover:brightness-110 transition">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link to="/auth" className="inline-flex items-center gap-2 rounded-full border border-border bg-card/40 px-6 py-3 text-sm font-semibold hover:bg-elevated transition">
-                <PlayCircle className="h-4 w-4" /> Login
-              </Link>
-            </div>
-            <div className="mt-10 flex items-center gap-8 text-xs text-muted-foreground">
-              <div><div className="text-2xl font-bold text-foreground">240K+</div>creators onboard</div>
-              <div><div className="text-2xl font-bold text-foreground">18M</div>tracks managed</div>
-              <div><div className="text-2xl font-bold text-foreground">99.99%</div>uptime</div>
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => openAuth("signup")}
+                className="flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold play-button-glow"
+              >
+                Get Started Free
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <a href="#" className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors">
+                Watch Demo
+                <Play className="w-4 h-4 fill-current" />
+              </a>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute -inset-8 bg-primary/20 blur-3xl rounded-full" />
-            <div className="relative overflow-hidden rounded-2xl border border-border shadow-card-elevated">
-              <img src={heroImage} alt="Music producer at a modern studio workstation" width={1600} height={1000} className="w-full h-auto object-cover" />
+          <div className="relative h-[480px] hidden lg:block">
+            <div className="absolute top-10 right-0 w-[280px] h-[380px] rounded-2xl overflow-hidden border border-border shadow-card-elevated rotate-3">
+              <img src={CONCERT_IMG} alt="Live concert crowd" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+            </div>
+            <div className="absolute top-0 left-8 w-[260px] h-[340px] rounded-2xl overflow-hidden border border-border shadow-card-elevated -rotate-2">
+              <img src={GAMING_IMG} alt="Gaming streaming setup" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent" />
+            </div>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[240px] h-[300px] rounded-2xl overflow-hidden border border-primary/40 shadow-glow z-10">
+              <img src={PODCAST_IMG} alt="Podcaster at microphone" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-xs text-primary font-semibold">LIVE NOW</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="max-w-2xl">
-          <div className="text-sm font-semibold text-primary uppercase tracking-wider">Features</div>
-          <h2 className="mt-2 text-4xl md:text-5xl font-black tracking-tight">Everything a modern creator needs.</h2>
-          <p className="mt-4 text-muted-foreground">Designed with the same craft as the tools that top artists rely on — refined for the way you actually work.</p>
-        </div>
-
-        <div className="mt-14 grid gap-4 md:grid-cols-3">
-          {[
-            { icon: Upload, image: fUpload, title: "Frictionless uploads", body: "Drag-and-drop MP3s, attach artwork, set metadata, and publish in seconds." },
-            { icon: Music2, image: fCatalog, title: "Unified catalog", body: "Songs, albums, versions and stems — one clean, searchable library." },
-            { icon: BarChart3, image: fAnalytics, title: "Studio-grade analytics", body: "Plays, growth, top tracks and geography with charts you actually want to look at." },
-            { icon: Disc3, image: fAlbum, title: "Album management", body: "Sequence tracks, edit release dates, and manage artwork across your catalog." },
-            { icon: Radio, image: fProfile, title: "Artist profile", body: "A polished public face for your work — bio, genre, releases and stats." },
-            { icon: Sparkles, image: fPremium, title: "Premium experience", body: "A calm, focused UI that gets out of your way and lets your work stand up." },
-          ].map((f) => (
-            <div key={f.title} className="hover-lift bg-card-gradient rounded-2xl border border-border overflow-hidden flex flex-col">
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <img src={f.image} alt={f.title} loading="lazy" width={1024} height={640} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent" />
-                <div className="absolute top-3 left-3 grid h-10 w-10 place-items-center rounded-lg bg-background/70 backdrop-blur border border-border text-primary">
-                  <f.icon className="h-5 w-5" />
-                </div>
+      {/* STATS BAR */}
+      <section className="border-y border-border bg-card">
+        <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+          {stats.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-foreground mb-1" style={{ fontFamily: "var(--font-display)", fontSize: "2.5rem", fontWeight: 800 }}>
+                {s.value}
               </div>
-              <div className="p-6">
-                <h3 className="text-lg font-bold">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.body}</p>
-              </div>
+              <div className="text-muted-foreground text-sm">{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Workflow */}
-      <section id="workflow" className="border-t border-border bg-surface/40">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="max-w-2xl">
-            <div className="text-sm font-semibold text-primary uppercase tracking-wider">Workflow</div>
-            <h2 className="mt-2 text-4xl md:text-5xl font-black tracking-tight">From idea to release — in four moves.</h2>
-            <p className="mt-4 text-muted-foreground">A single, focused flow. No spreadsheets, no scattered tools.</p>
+      {/* VISUAL SHOWCASE */}
+      <section className="relative h-[520px] overflow-hidden">
+        <img src={CONCERT_IMG2} alt="Band performing on stage in front of crowd" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="max-w-7xl mx-auto px-6 max-w-lg">
+            <p className="text-primary font-semibold uppercase tracking-widest text-sm mb-3" style={{ fontFamily: "var(--font-display)" }}>
+              For Every Creator
+            </p>
+            <h2
+              className="text-foreground leading-tight mb-4"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2.5rem, 5vw, 4rem)", fontWeight: 800, textTransform: "uppercase" }}
+            >
+              One Platform.<br />Infinite Reach.
+            </h2>
+            <p className="text-muted-foreground text-base leading-relaxed">
+              Whether you{"'"}re a music artist, live streamer, or podcast creator — Now-Play gives you the
+              tools to grow, engage, and earn.
+            </p>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-14 grid gap-4 md:grid-cols-4">
-            {[
-              { step: "01", image: wUpload, title: "Upload", body: "Drop your master, attach artwork and metadata." },
-              { step: "02", image: wOrganize, title: "Organize", body: "Group tracks into albums, sequence, and edit." },
-              { step: "03", image: wAnalyze, title: "Analyze", body: "See plays, listeners and geography in real time." },
-              { step: "04", image: wGrow, title: "Grow", body: "Share your artist profile and reach new fans." },
-            ].map((s) => (
-              <div key={s.step} className="rounded-2xl border border-border bg-card overflow-hidden hover-lift flex flex-col">
-                <div className="relative aspect-[16/10] overflow-hidden">
-                  <img src={s.image} alt={s.title} loading="lazy" width={1024} height={640} className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-transparent" />
-                  <div className="absolute top-3 left-3 rounded-md bg-background/70 backdrop-blur border border-border px-2 py-1 text-[10px] font-bold tracking-widest text-primary">
-                    {s.step}
-                  </div>
+      {/* FEATURES */}
+      <section className="py-28 px-6 bg-background" id="features">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-primary uppercase tracking-widest text-sm font-semibold mb-3" style={{ fontFamily: "var(--font-display)" }}>
+              Built for Creators
+            </p>
+            <h2
+              className="text-foreground"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, textTransform: "uppercase" }}
+            >
+              Everything You Need to Grow
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {features.map((f) => (
+              <div key={f.title} className="relative group rounded-2xl border border-border bg-card p-8 hover-lift hover:border-primary/50">
+                <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center mb-6 group-hover:bg-primary/25 transition-colors">
+                  <f.icon className="w-6 h-6 text-primary" />
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold">{s.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+                <h3 className="text-foreground mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 700 }}>
+                  {f.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-6">{f.desc}</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  {f.stat}
                 </div>
               </div>
             ))}
@@ -159,108 +294,92 @@ function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section id="creators" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-card-gradient grid md:grid-cols-2">
-          <div className="relative p-10 md:p-16 order-2 md:order-1">
-            <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-            <div className="relative max-w-xl">
-              <div className="text-sm font-semibold text-primary uppercase tracking-wider">For creators</div>
-              <h2 className="mt-2 text-3xl md:text-5xl font-black tracking-tight">Start uploading tonight.</h2>
-              <p className="mt-4 text-muted-foreground">Free to try. No credit card. Import your existing catalog in minutes.</p>
-              <Link to="/auth" search={{ mode: "signup" }} className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary-gradient px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow hover:brightness-110 transition">
-                Create your account <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+      {/* TESTIMONIALS */}
+      <section className="py-24 px-6 bg-card border-y border-border">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <h2
+              className="text-foreground"
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 800, textTransform: "uppercase" }}
+            >
+              Creators Love Now-Play
+            </h2>
           </div>
-          <div className="relative min-h-[280px] md:min-h-[420px] order-1 md:order-2">
-            <img src={creatorsCta} alt="Music producer at a studio mixing console" loading="lazy" width={1024} height={1024} className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-r from-card via-card/40 to-transparent md:from-card md:via-transparent md:to-transparent" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <div key={t.name} className="rounded-2xl border border-border bg-background p-7 hover:border-primary/30 transition-colors">
+                <p className="text-muted-foreground text-sm leading-relaxed mb-6 italic">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <img src={t.img} alt={t.name} className="w-10 h-10 rounded-full object-cover border border-border" />
+                  <div>
+                    <div className="text-foreground text-sm font-semibold">{t.name}</div>
+                    <div className="text-muted-foreground text-xs">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-border bg-surface/60">
-        <div className="mx-auto max-w-7xl px-6 py-14">
-          <div className="grid gap-10 md:grid-cols-4">
-            {/* Brand */}
-            <div>
-              <Link to="/" className="flex items-center gap-2">
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-primary-gradient shadow-glow ring-1 ring-primary/40">
-                  <span className="text-[10px] font-black tracking-wider text-primary-foreground">CBM</span>
-                </div>
-                <div className="leading-tight">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-foreground">Now Play</span>
-                    <Radio className="h-3 w-3 text-primary" />
-                  </div>
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">for Creators</div>
-                </div>
-              </Link>
-              <p className="mt-5 text-sm text-muted-foreground leading-relaxed">
-                Step into a realm where imagination knows no bounds, and creativity is the key to unlocking endless possibilities.
-              </p>
-              <div className="mt-5 flex items-center gap-2">
-                {[Facebook, Twitter, Linkedin, Instagram].map((Icon, i) => (
-                  <a key={i} href="#" aria-label="Social link" className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:text-primary hover:border-primary/60 transition">
-                    <Icon className="h-4 w-4" />
-                  </a>
-                ))}
-              </div>
-            </div>
+      {/* COMMUNITY CTA */}
+      <section className="relative py-32 px-6 overflow-hidden bg-hero-gradient">
+        <div className="absolute top-12 right-20 text-4xl opacity-10 select-none">♪</div>
+        <div className="absolute bottom-16 left-16 text-5xl opacity-10 select-none">♫</div>
+        <div className="absolute top-1/2 right-1/3 text-2xl opacity-5 select-none">♩</div>
 
-            {/* Information */}
-            <div>
-              <h4 className="text-sm font-bold text-foreground">Information</h4>
-              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition">About CBM</a></li>
-                <li><a href="#workflow" className="hover:text-foreground transition">How it works</a></li>
-                <li><a href="#creators" className="hover:text-foreground transition">For creators</a></li>
-              </ul>
-            </div>
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <p className="text-primary uppercase tracking-widest text-sm font-semibold mb-4" style={{ fontFamily: "var(--font-display)" }}>
+            Join the Movement
+          </p>
+          <h2
+            className="text-foreground mb-6"
+            style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2.5rem, 6vw, 5rem)", fontWeight: 900, textTransform: "uppercase", lineHeight: "0.95" }}
+          >
+            Join Thousands of Creators
+            <br />
+            <span className="text-primary">Growing with Now-Play</span>
+          </h2>
+          <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+            Your audience is waiting. Your revenue is untapped. The only thing missing is the right platform.
+          </p>
+          <button
+            onClick={() => openAuth("signup")}
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-full bg-primary text-primary-foreground font-bold text-lg play-button-glow"
+            style={{ fontFamily: "var(--font-display)", letterSpacing: "0.05em" }}
+          >
+            Sign Up for Free
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <p className="text-muted-foreground text-sm mt-4">No credit card required · Cancel anytime</p>
+        </div>
+      </section>
 
-            {/* Helpful Links */}
-            <div>
-              <h4 className="text-sm font-bold text-foreground">Helpful Links</h4>
-              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Services</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Support 24/7</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Terms &amp; Conditions</a></li>
-              </ul>
+      {/* FOOTER */}
+      <footer className="border-t border-border bg-card py-12 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+              <Play className="w-3.5 h-3.5 text-primary-foreground fill-current ml-0.5" />
             </div>
-
-            {/* Our Services */}
-            <div>
-              <h4 className="text-sm font-bold text-foreground">Our Services</h4>
-              <ul className="mt-5 space-y-3 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition">Music Distribution</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Support 24/7</a></li>
-                <li><a href="#" className="hover:text-foreground transition">Creator Guide</a></li>
-              </ul>
-            </div>
+            <span className="text-foreground font-semibold" style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", letterSpacing: "0.05em" }}>
+              now-play
+            </span>
           </div>
-
-          {/* Contact strip */}
-          <div className="mt-12 grid gap-4 md:grid-cols-3 border-t border-border pt-8 text-sm">
-            <a href="tel:+256776789133" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-primary"><Phone className="h-4 w-4" /></span>
-              +256 776 789 133
-            </a>
-            <a href="mailto:cbmadvertsingads@gmail.com" className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-primary"><Mail className="h-4 w-4" /></span>
-              cbmadvertsingads@gmail.com
-            </a>
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/15 text-primary"><MapPin className="h-4 w-4" /></span>
-              National ICT Innovation Hub, Nakawa, Kampala, Uganda
-            </div>
-          </div>
-
-          <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} CBM Advertising · Now Play for Creators. All rights reserved.
-          </div>
+          <nav className="flex flex-wrap gap-6 text-sm text-muted-foreground">
+            {["Overview", "Features", "Pricing", "Support", "Privacy", "Terms"].map((l) => (
+              <a key={l} href="#" className="hover:text-foreground transition-colors">
+                {l}
+              </a>
+            ))}
+          </nav>
+          <p className="text-muted-foreground text-xs">© 2026 Now-Play. All rights reserved.</p>
         </div>
       </footer>
+
+      {authOpen && (
+        <AuthModal mode={authMode} onClose={() => setAuthOpen(false)} onSwitchMode={() => setAuthMode((m) => (m === "login" ? "signup" : "login"))} />
+      )}
     </div>
   );
 }
