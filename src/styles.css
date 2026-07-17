@@ -5,9 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Now Play for Creators — Spotify-inspired dark design system.
- * Deep-black surfaces, layered dark greys, a signature music green (#1DB954),
- * and warm off-white text. All tokens live here; components never hardcode colors.
+ * Now Play for Creators — theme values swapped in over the existing
+ * token structure. Component code is untouched: every --elevated,
+ * --surface, bg-hero-gradient, hover-lift, play-button-glow, etc.
+ * still exists and still works, just repainted with the Now-Play palette.
  */
 
 @theme inline {
@@ -55,63 +56,64 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 
-  /* Base surfaces — layered blacks. */
-  --background: oklch(0.14 0 0);         /* #0f0f0f deep black */
-  --surface: oklch(0.17 0 0);            /* app chrome */
-  --card: oklch(0.20 0 0);               /* #1a1a1a */
-  --elevated: oklch(0.24 0 0);           /* hover / popovers */
-  --popover: oklch(0.20 0 0);
-  --foreground: oklch(0.98 0 0);
-  --card-foreground: oklch(0.98 0 0);
-  --popover-foreground: oklch(0.98 0 0);
+  /* Base surfaces — Now-Play's near-black, slightly cooler than the original. */
+  --background: #0a0f0e;
+  --surface: #0e1615;
+  --card: #111918;
+  --elevated: #16201f;
+  --popover: #111918;
+  --foreground: #f0f4f3;
+  --card-foreground: #f0f4f3;
+  --popover-foreground: #f0f4f3;
 
-  /* Music green (#1DB954). */
-  --primary: oklch(0.72 0.19 148);
-  --primary-glow: oklch(0.78 0.20 148);
-  --primary-foreground: oklch(0.12 0 0);
+  /* Now-Play green (#168978) in place of the original #1DB954. */
+  --primary: #168978;
+  --primary-glow: #1fa88f;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.26 0 0);
-  --secondary-foreground: oklch(0.98 0 0);
-  --muted: oklch(0.24 0 0);
-  --muted-foreground: oklch(0.68 0 0);
-  --accent: oklch(0.28 0 0);
-  --accent-foreground: oklch(0.98 0 0);
+  --secondary: #1a2422;
+  --secondary-foreground: #a8bfbb;
+  --muted: #162120;
+  --muted-foreground: #7a9b96;
+  --accent: #168978;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.62 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
+  --destructive-foreground: #ffffff;
 
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.72 0.19 148);
+  --border: rgba(22, 137, 120, 0.15);
+  --input: rgba(22, 137, 120, 0.1);
+  --ring: #168978;
 
-  /* Chart palette on dark. */
-  --chart-1: oklch(0.72 0.19 148);
+  /* Chart palette, keyed off the new green instead of the old one. */
+  --chart-1: #168978;
   --chart-2: oklch(0.78 0.14 90);
   --chart-3: oklch(0.68 0.17 30);
   --chart-4: oklch(0.65 0.19 300);
   --chart-5: oklch(0.70 0.16 220);
 
   /* Sidebar. */
-  --sidebar: oklch(0.12 0 0);
-  --sidebar-foreground: oklch(0.88 0 0);
-  --sidebar-primary: oklch(0.72 0.19 148);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.20 0 0);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(1 0 0 / 6%);
-  --sidebar-ring: oklch(0.72 0.19 148);
+  --sidebar: #0a0f0e;
+  --sidebar-foreground: #d7e5e2;
+  --sidebar-primary: #168978;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #111918;
+  --sidebar-accent-foreground: #f0f4f3;
+  --sidebar-border: rgba(22, 137, 120, 0.1);
+  --sidebar-ring: #168978;
 
-  /* Semantic gradients & shadows. */
-  --gradient-hero: radial-gradient(ellipse at top left, oklch(0.72 0.19 148 / 0.25), transparent 60%),
+  /* Semantic gradients & shadows — same slots, repainted green. */
+  --gradient-hero: radial-gradient(ellipse at top left, rgba(22, 137, 120, 0.25), transparent 60%),
                    radial-gradient(ellipse at bottom right, oklch(0.55 0.20 280 / 0.18), transparent 55%),
-                   linear-gradient(180deg, oklch(0.14 0 0), oklch(0.10 0 0));
-  --gradient-card: linear-gradient(160deg, oklch(0.22 0 0), oklch(0.16 0 0));
-  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.19 148), oklch(0.80 0.18 155));
-  --shadow-glow: 0 20px 60px -20px oklch(0.72 0.19 148 / 0.45);
+                   linear-gradient(180deg, #0a0f0e, #070b0a);
+  --gradient-card: linear-gradient(160deg, #16201f, #0e1615);
+  --gradient-primary: linear-gradient(135deg, #168978, #1fa88f);
+  --shadow-glow: 0 20px 60px -20px rgba(22, 137, 120, 0.45);
   --shadow-card: 0 10px 30px -12px oklch(0 0 0 / 0.6);
 }
 
@@ -164,7 +166,7 @@
   transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease;
   &:hover {
     transform: scale(1.06);
-    box-shadow: 0 10px 30px -10px oklch(0.72 0.19 148 / 0.6);
+    box-shadow: 0 10px 30px -10px rgba(22, 137, 120, 0.6);
   }
 }
 
