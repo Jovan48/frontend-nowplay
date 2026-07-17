@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Radio, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +17,12 @@ function AuthPage() {
   const { mode } = Route.useSearch();
   const isSignup = mode === "signup";
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  // NOTE: signIn/signUp are mock-only additions on the temporary
+  // auth-context.tsx. The real auth-context.tsx doesn't have them —
+  // the real version of this file calls supabase.auth.signUp /
+  // signInWithPassword directly instead. Revert this block (see
+  // bottom of file) when a real backend is wired back in.
+  const { user, loading, signIn, signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [stageName, setStageName] = useState("");
@@ -33,18 +37,12 @@ function AuthPage() {
     setBusy(true);
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
-          email, password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: { stage_name: stageName || email.split("@")[0] },
-          },
-        });
-        if (error) throw error;
+        const { error } = await signUp(email, password, stageName);
+        if (error) throw new Error(error);
         toast.success("Account created — welcome!");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { error } = await signIn(email, password);
+        if (error) throw new Error(error);
         toast.success("Welcome back");
       }
       navigate({ to: "/dashboard", replace: true });
@@ -138,3 +136,13 @@ function AuthPage() {
     </div>
   );
 }
+
+/**
+ * TO RESTORE REAL SUPABASE AUTH LATER:
+ * 1. Re-add: import { supabase } from "@/integrations/supabase/client";
+ * 2. Remove signIn/signUp from the useAuth() destructure above.
+ * 3. In handleSubmit, replace the signUp(...) / signIn(...) calls with
+ *    the original supabase.auth.signUp({...}) / signInWithPassword({...})
+ *    calls (see the version of this file you shared earlier).
+ * 4. Swap auth-context.tsx back to the real Supabase-backed version.
+ */
