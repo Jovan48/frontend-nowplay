@@ -1,28 +1,99 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { CreatorShell } from "@/components/creator-shell";
-import { formatNumber } from "@/lib/mock-data";
-import { useLibrary } from "@/lib/library-context";
+import { apiClient } from "@/lib/api-client";
 import { Pencil, Trash2, Play, Plus, Volume2 } from "lucide-react";
 import { usePlayer } from "@/lib/player-context";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+
+type AlbumRecord = {
+  id: string;
+  title: string;
+  artist: string;
+  cover: string;
+  genre: string;
+  releasedAt: string;
+};
+
+type TrackRecord = {
+  id: string;
+  title: string;
+  albumId: string;
+  cover: string;
+  plays: number;
+  trackNumber: number;
+  duration: string;
+};
 
 export const Route = createFileRoute("/_authenticated/albums")({
   head: () => ({ meta: [{ title: "Albums — Now Play for Creators" }] }),
   component: AlbumsPage,
 });
 
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+function normalizeAlbum(payload: Record<string, unknown>): AlbumRecord {
+  return {
+    id: String(payload.id ?? ""),
+    title: String(payload.title ?? "Untitled album"),
+    artist: String(payload.artist ?? ""),
+    cover: String(payload.cover ?? ""),
+    genre: String(payload.genre ?? ""),
+    releasedAt: String(payload.releasedAt ?? payload.released_at ?? ""),
+  };
+}
+
+function normalizeTrack(payload: Record<string, unknown>): TrackRecord {
+  return {
+    id: String(payload.id ?? ""),
+    title: String(payload.title ?? "Untitled"),
+    albumId: String(payload.albumId ?? payload.album_id ?? ""),
+    cover: String(payload.cover ?? ""),
+    plays: Number(payload.plays ?? 0),
+    trackNumber: Number(payload.trackNumber ?? payload.track_number ?? 0),
+    duration: String(payload.duration ?? "0:00"),
+  };
+}
+
 function AlbumsPage() {
   const player = usePlayer();
-  const { albums, tracks, updateAlbum } = useLibrary();
-  const [activeId, setActiveId] = useState(albums[0].id);
+  const { data: albumsData = [] } = useQuery({
+    queryKey: ["albums"],
+    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
+  });
+  const { data: tracksData = [] } = useQuery({
+    queryKey: ["tracks"],
+    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/tracks/"),
+  });
+  const albums = (albumsData ?? []).map((album) => normalizeAlbum(album as Record<string, unknown>));
+  const tracks = (tracksData ?? []).map((track) => normalizeTrack(track as Record<string, unknown>));
+  const [activeId, setActiveId] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-  const active = albums.find((a) => a.id === activeId)!;
-  const activeTracks = tracks.filter((t) => t.albumId === active.id).sort((a,b) => a.trackNumber - b.trackNumber);
-  const totalPlays = activeTracks.reduce((s, t) => s + t.plays, 0);
+
+  useEffect(() => {
+    if (!albums.length) return;
+    setActiveId((current) => (current && albums.some((album) => album.id === current) ? current : albums[0].id));
+  }, [albums]);
+
+  const active = albums.find((album) => album.id === activeId) ?? albums[0];
+  const activeTracks = tracks.filter((track) => track.albumId === active?.id).sort((a, b) => a.trackNumber - b.trackNumber);
+  const totalPlays = activeTracks.reduce((sum, track) => sum + track.plays, 0);
+
+  if (!active) {
+    return (
+      <CreatorShell>
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">No albums available yet.</div>
+      </CreatorShell>
+    );
+  }
 
   return (
     <CreatorShell>
@@ -37,24 +108,22 @@ function AlbumsPage() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        {/* Album grid */}
         <div className="grid gap-4 sm:grid-cols-2">
-          {albums.map((a) => (
+          {albums.map((album) => (
             <button
-              key={a.id}
-              onClick={() => setActiveId(a.id)}
+              key={album.id}
+              onClick={() => setActiveId(album.id)}
               className={`hover-lift text-left rounded-2xl border p-3 transition-colors ${
-                a.id === activeId ? "border-primary/60 bg-elevated" : "border-border bg-card"
+                album.id === activeId ? "border-primary/60 bg-elevated" : "border-border bg-card"
               }`}
             >
-              <img src={a.cover} alt="" className="aspect-square w-full rounded-lg object-cover" />
-              <div className="mt-3 truncate text-sm font-semibold">{a.title}</div>
-              <div className="truncate text-xs text-muted-foreground">{a.genre} · {new Date(a.releasedAt).getFullYear()}</div>
+              <img src={album.cover} alt="" className="aspect-square w-full rounded-lg object-cover" />
+              <div className="mt-3 truncate text-sm font-semibold">{album.title}</div>
+              <div className="truncate text-xs text-muted-foreground">{album.genre} · {new Date(album.releasedAt).getFullYear()}</div>
             </button>
           ))}
         </div>
 
-        {/* Album detail */}
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-start gap-5">
             <img src={active.cover} alt="" className="h-32 w-32 rounded-xl object-cover shadow-card-elevated" />
@@ -71,7 +140,7 @@ function AlbumsPage() {
                 <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:bg-elevated">
                   <Pencil className="h-3.5 w-3.5" /> Edit
                 </button>
-                <button onClick={() => toast.success("Album archived (mock)")} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-destructive hover:bg-elevated">
+                <button onClick={() => toast.success("Album archived (mock)" )} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-destructive hover:bg-elevated">
                   <Trash2 className="h-3.5 w-3.5" /> Delete
                 </button>
               </div>
@@ -84,29 +153,29 @@ function AlbumsPage() {
           </div>
 
           <ul className="mt-3 divide-y divide-border rounded-xl border border-border overflow-hidden">
-            {activeTracks.map((t) => {
-              const isCurrent = player.current?.id === t.id;
+            {activeTracks.map((track) => {
+              const isCurrent = player.current?.id === track.id;
               return (
-              <li key={t.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-elevated ${isCurrent ? "bg-elevated/60" : ""}`}>
+              <li key={track.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-elevated ${isCurrent ? "bg-elevated/60" : ""}`}>
                 <div className="w-6 text-center text-xs tabular-nums">
                   {isCurrent ? (
                     <NowPlayingBars playing={player.isPlaying} />
                   ) : (
-                    <span className="text-muted-foreground">{t.trackNumber}</span>
+                    <span className="text-muted-foreground">{track.trackNumber}</span>
                   )}
                 </div>
-                <button onClick={() => player.play(t, activeTracks)} className="grid h-8 w-8 place-items-center rounded-full bg-elevated hover:bg-primary hover:text-primary-foreground transition">
+                <button onClick={() => player.play(track, activeTracks)} className="grid h-8 w-8 place-items-center rounded-full bg-elevated hover:bg-primary hover:text-primary-foreground transition">
                   <Play className="h-3.5 w-3.5" />
                 </button>
-                <img src={t.cover} alt="" className="h-9 w-9 rounded object-cover" />
+                <img src={track.cover} alt="" className="h-9 w-9 rounded object-cover" />
                 <div className="min-w-0 flex-1">
                   <div className={`truncate text-sm font-semibold ${isCurrent ? "text-primary" : ""}`}>
-                    {t.title}
+                    {track.title}
                     {isCurrent && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary"><Volume2 className="h-3 w-3" /> Now playing</span>}
                   </div>
                 </div>
-                <div className="hidden sm:block text-xs tabular-nums text-muted-foreground">{formatNumber(t.plays)}</div>
-                <div className="text-xs tabular-nums text-muted-foreground">{t.duration}</div>
+                <div className="hidden sm:block text-xs tabular-nums text-muted-foreground">{formatNumber(track.plays)}</div>
+                <div className="text-xs tabular-nums text-muted-foreground">{track.duration}</div>
               </li>
               );
             })}
@@ -119,7 +188,7 @@ function AlbumsPage() {
         open={editOpen}
         onOpenChange={setEditOpen}
         album={active}
-        onSave={(patch) => { updateAlbum(active.id, patch); setEditOpen(false); toast.success("Album updated"); }}
+        onSave={() => { setEditOpen(false); toast.success("Album updated"); }}
       />
     </CreatorShell>
   );
@@ -128,13 +197,13 @@ function AlbumsPage() {
 function NowPlayingBars({ playing }: { playing: boolean }) {
   return (
     <span className="inline-flex h-4 items-end gap-[2px]">
-      {[0, 1, 2].map((i) => (
+      {[0, 1, 2].map((index) => (
         <span
-          key={i}
+          key={index}
           className="w-[3px] rounded-sm bg-primary"
           style={{
             height: playing ? "100%" : "30%",
-            animation: playing ? `npc-bars 900ms ease-in-out ${i * 120}ms infinite` : undefined,
+            animation: playing ? `npc-bars 900ms ease-in-out ${index * 120}ms infinite` : undefined,
           }}
         />
       ))}

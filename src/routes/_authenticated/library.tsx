@@ -1,23 +1,57 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Play, Pencil, Trash2, Search, Filter } from "lucide-react";
 import { CreatorShell } from "@/components/creator-shell";
-import { formatNumber } from "@/lib/mock-data";
-import { useLibrary } from "@/lib/library-context";
 import { usePlayer } from "@/lib/player-context";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+
+type LibraryTrack = {
+  id: string;
+  title: string;
+  album: string;
+  genre: string;
+  cover: string;
+  duration: string;
+  plays: number;
+  artist: string;
+};
 
 export const Route = createFileRoute("/_authenticated/library")({
   head: () => ({ meta: [{ title: "Library — Now Play for Creators" }] }),
   component: Library,
 });
 
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+function normalizeTrack(payload: Record<string, unknown>): LibraryTrack {
+  return {
+    id: String(payload.id ?? ""),
+    title: String(payload.title ?? "Untitled"),
+    album: String(payload.album ?? payload.albumTitle ?? "Untitled album"),
+    genre: String(payload.genre ?? ""),
+    cover: String(payload.cover ?? ""),
+    duration: String(payload.duration ?? "0:00"),
+    plays: Number(payload.plays ?? 0),
+    artist: String(payload.artist ?? ""),
+  };
+}
+
 function Library() {
   const [q, setQ] = useState("");
   const [genre, setGenre] = useState<string>("all");
   const player = usePlayer();
-  const { tracks: allTracks } = useLibrary();
+  const { data: tracksData = [] } = useQuery({
+    queryKey: ["tracks"],
+    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/tracks/"),
+  });
 
+  const allTracks = (tracksData ?? []).map((track) => normalizeTrack(track as Record<string, unknown>));
   const genres = useMemo(() => ["all", ...Array.from(new Set(allTracks.map((t) => t.genre)))], [allTracks]);
   const filtered = allTracks.filter((t) =>
     (genre === "all" || t.genre === genre) &&
