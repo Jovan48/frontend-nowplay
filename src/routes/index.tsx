@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Play, BarChart2, MessageCircle, DollarSign, ChevronRight, Menu, X } from "lucide-react";
-import AuthModal, { AuthMode } from "../components/AuthModal";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -39,6 +38,14 @@ const features = [
     stat: "↑ 5× revenue",
   },
 ];
+const categories = [
+  { name: "Poets", emoji: "✒️", color: "var(--color-primary)" },
+  { name: "Actors", emoji: "🎭", color: "var(--color-chart-2)" },
+  { name: "Musicians", emoji: "🎵", color: "var(--color-chart-3)" },
+  { name: "Podcasters", emoji: "🎙️", color: "var(--color-chart-4)" },
+  { name: "Authors", emoji: "📖", color: "var(--color-chart-5)" },
+  { name: "Voice Actors", emoji: "🎧", color: "var(--color-primary-glow)" },
+];
 
 const testimonials = [
   {
@@ -67,7 +74,7 @@ function WaveformSVG() {
       {Array.from({ length: 80 }).map((_, i) => {
         const h = 20 + Math.sin(i * 0.4) * 50 + Math.sin(i * 0.15) * 30 + Math.random() * 20;
         const x = (i / 80) * 1200;
-        return <rect key={i} x={x} y={100 - h / 2} width={10} height={h} rx={3} fill="var(--color-primary)" />;
+        return <rect key={i} x={x} y={100 - Math.max(h, 4) / 2} width={10} height={Math.max(h, 4)} rx={3} fill="var(--color-primary)" />;
       })}
     </svg>
   );
@@ -76,20 +83,12 @@ function WaveformSVG() {
 function Index() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<AuthMode>("login");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  function openAuth(mode: AuthMode) {
-    setAuthMode(mode);
-    setAuthOpen(true);
-    setMenuOpen(false);
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden" style={{ fontFamily: "var(--font-sans)" }}>
@@ -122,15 +121,16 @@ function Index() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <button onClick={() => openAuth("login")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/auth" search={{ mode: "signin" }} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Log In
-            </button>
-            <button
-              onClick={() => openAuth("signup")}
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
               className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover-lift transition-colors"
             >
               Sign Up
-            </button>
+            </Link>
           </div>
 
           <button className="md:hidden text-muted-foreground" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
@@ -150,12 +150,17 @@ function Index() {
               </a>
             ))}
             <hr className="border-border" />
-            <button onClick={() => openAuth("login")} className="text-muted-foreground text-left">
+            <Link to="/auth" search={{ mode: "signin" }} onClick={() => setMenuOpen(false)} className="text-muted-foreground text-left">
               Log In
-            </button>
-            <button onClick={() => openAuth("signup")} className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold text-center">
+            </Link>
+            <Link
+              to="/auth"
+              search={{ mode: "signup" }}
+              onClick={() => setMenuOpen(false)}
+              className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold text-center"
+            >
               Sign Up
-            </button>
+            </Link>
           </div>
         )}
       </nav>
@@ -172,30 +177,28 @@ function Index() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold mb-6 tracking-wider uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Now Live for Creators
-            </div>
+           
             <h1
               className="text-foreground leading-[0.9] mb-6"
-              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3.5rem, 8vw, 6.5rem)", fontWeight: 900, textTransform: "uppercase", letterSpacing: "-0.01em" }}
+              style={{ fontFamily: "var(--font-display)", fontSize: "clamp(3rem, 7vw, 5.5rem)", fontWeight: 800, textTransform: "none", letterSpacing: "-0.01em" }}
             >
-              Take Your <span className="text-primary">Content</span> to the Next Level
+              Your music. <span className="text-primary">Your catalog. </span> Your control.
             </h1>
             <p className="text-muted-foreground text-lg leading-relaxed mb-10 max-w-xl">
               Engage your audience like never before with Now-Play for Creators. The platform built for artists,
               streamers, and storytellers who refuse to be ordinary.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => openAuth("signup")}
+              <Link
+                to="/auth"
+                search={{ mode: "signup" }}
                 className="flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold play-button-glow"
               >
                 Get Started Free
                 <ChevronRight className="w-4 h-4" />
-              </button>
+              </Link>
               <a href="#" className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors">
-                Watch Demo
+                
                 <Play className="w-4 h-4 fill-current" />
               </a>
             </div>
@@ -294,6 +297,43 @@ function Index() {
         </div>
       </section>
 
+      {/* CATEGORIES */}
+<section className="py-28 px-6 bg-background">
+  <div className="max-w-7xl mx-auto">
+    <div className="text-center mb-16">
+      <p className="text-primary uppercase tracking-widest text-sm font-semibold mb-3" style={{ fontFamily: "var(--font-display)" }}>
+        For Every Kind of Creator
+      </p>
+      <h2
+        className="text-foreground"
+        style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, textTransform: "uppercase" }}
+      >
+        Made for Your Craft
+      </h2>
+    </div>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      {categories.map((c) => (
+        <div
+          key={c.name}
+          className="group relative rounded-2xl border border-border bg-card p-8 flex flex-col items-center justify-center gap-3 hover-lift hover:border-primary/50 overflow-hidden"
+        >
+          <div
+            className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
+            style={{ background: `radial-gradient(circle at 30% 20%, ${c.color}, transparent 70%)` }}
+          />
+          <span className="relative text-4xl">{c.emoji}</span>
+          <h3
+            className="relative text-foreground"
+            style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", fontWeight: 800, textTransform: "uppercase" }}
+          >
+            {c.name}
+          </h3>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
       {/* TESTIMONIALS */}
       <section className="py-24 px-6 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
@@ -343,14 +383,15 @@ function Index() {
           <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
             Your audience is waiting. Your revenue is untapped. The only thing missing is the right platform.
           </p>
-          <button
-            onClick={() => openAuth("signup")}
+          <Link
+            to="/auth"
+            search={{ mode: "signup" }}
             className="inline-flex items-center gap-2 px-10 py-4 rounded-full bg-primary text-primary-foreground font-bold text-lg play-button-glow"
             style={{ fontFamily: "var(--font-display)", letterSpacing: "0.05em" }}
           >
             Sign Up for Free
             <ChevronRight className="w-5 h-5" />
-          </button>
+          </Link>
           <p className="text-muted-foreground text-sm mt-4">No credit card required · Cancel anytime</p>
         </div>
       </section>
@@ -376,10 +417,6 @@ function Index() {
           <p className="text-muted-foreground text-xs">© 2026 Now-Play. All rights reserved.</p>
         </div>
       </footer>
-
-      {authOpen && (
-        <AuthModal mode={authMode} onClose={() => setAuthOpen(false)} onSwitchMode={() => setAuthMode((m) => (m === "login" ? "signup" : "login"))} />
-      )}
     </div>
   );
 }
