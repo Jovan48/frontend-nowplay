@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Track } from "./mock-data";
+import type { Track } from "./types";
 
 type PlayerContextValue = {
   current: Track | null;
