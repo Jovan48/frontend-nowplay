@@ -6,7 +6,11 @@ const AUTH_STORAGE_KEYS = {
 } as const;
 
 function getBaseUrl() {
-  return (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
+  let rawUrl = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).trim().replace(/\/$/, "");
+  if (!/^https?:\/\//i.test(rawUrl)) {
+    rawUrl = `https://${rawUrl}`;
+  }
+  return rawUrl;
 }
 
 function getStorage() {
