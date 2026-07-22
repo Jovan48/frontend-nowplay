@@ -38,6 +38,14 @@ const features = [
     stat: "↑ 5× revenue",
   },
 ];
+const categories = [
+  { name: "Poets", emoji: "✒️", color: "var(--color-primary)" },
+  { name: "Actors", emoji: "🎭", color: "var(--color-chart-2)" },
+  { name: "Musicians", emoji: "🎵", color: "var(--color-chart-3)" },
+  { name: "Podcasters", emoji: "🎙️", color: "var(--color-chart-4)" },
+  { name: "Authors", emoji: "📖", color: "var(--color-chart-5)" },
+  { name: "Voice Actors", emoji: "🎧", color: "var(--color-primary-glow)" },
+];
 
 const testimonials = [
   {
@@ -190,7 +198,7 @@ function Index() {
                 <ChevronRight className="w-4 h-4" />
               </Link>
               <a href="#" className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors">
-                Watch Demo
+                
                 <Play className="w-4 h-4 fill-current" />
               </a>
             </div>
@@ -288,6 +296,43 @@ function Index() {
           </div>
         </div>
       </section>
+
+      {/* CATEGORIES */}
+<section className="py-28 px-6 bg-background">
+  <div className="max-w-7xl mx-auto">
+    <div className="text-center mb-16">
+      <p className="text-primary uppercase tracking-widest text-sm font-semibold mb-3" style={{ fontFamily: "var(--font-display)" }}>
+        For Every Kind of Creator
+      </p>
+      <h2
+        className="text-foreground"
+        style={{ fontFamily: "var(--font-display)", fontSize: "clamp(2rem, 4vw, 3.5rem)", fontWeight: 800, textTransform: "uppercase" }}
+      >
+        Made for Your Craft
+      </h2>
+    </div>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+      {categories.map((c) => (
+        <div
+          key={c.name}
+          className="group relative rounded-2xl border border-border bg-card p-8 flex flex-col items-center justify-center gap-3 hover-lift hover:border-primary/50 overflow-hidden"
+        >
+          <div
+            className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
+            style={{ background: `radial-gradient(circle at 30% 20%, ${c.color}, transparent 70%)` }}
+          />
+          <span className="relative text-4xl">{c.emoji}</span>
+          <h3
+            className="relative text-foreground"
+            style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", fontWeight: 800, textTransform: "uppercase" }}
+          >
+            {c.name}
+          </h3>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* TESTIMONIALS */}
       <section className="py-24 px-6 bg-card border-y border-border">
