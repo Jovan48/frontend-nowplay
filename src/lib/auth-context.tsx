@@ -1,26 +1,18 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { apiClient, clearAuthTokens, setAuthTokens } from "./api-client";
 
-/**
- * TEMPORARY mock auth context — no Supabase, no persistence.
- * Matches the real auth-context.tsx's core shape (user, session,
- * profile, loading, refreshProfile, signOut) and adds mock signIn /
- * signUp so auth.tsx has something to call instead of Supabase.
- *
- * To restore real Supabase later: put the original file back,
- * and revert auth.tsx's two supabase.auth.* calls (see notes there).
- */
-
-type MockUser = {
+type AuthUser = {
   id: string;
   email: string;
 };
 
-type MockSession = {
-  user: MockUser;
+type AuthSession = {
+  user: AuthUser;
 };
 
 export type Profile = {
   id: string;
+  email?: string;
   stage_name: string;
   biography: string;
   genre: string;
@@ -29,36 +21,64 @@ export type Profile = {
 };
 
 type AuthContextValue = {
-  user: MockUser | null;
-  session: MockSession | null;
+  user: AuthUser | null;
+  session: AuthSession | null;
   profile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
-  // Mock-only additions — the real auth-context.tsx does not have these,
-  // because the real auth.tsx calls supabase.auth.* directly instead.
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, stageName?: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Flip to true to skip login entirely while testing dashboard pages.
-const START_LOGGED_IN = false;
-
-function makeProfile(id: string, stageName: string): Profile {
-  return { id, stage_name: stageName, biography: "", genre: "", location: "", avatar_url: "" };
+function makeProfile(profile: Partial<Profile> | null | undefined, fallbackId: string, fallbackStageName?: string): Profile | null {
+  if (!profile && !fallbackId) return null;
+  return {
+    id: profile?.id ?? fallbackId,
+    email: profile?.email ?? "",
+    stage_name: profile?.stage_name ?? fallbackStageName ?? "",
+    biography: profile?.biography ?? "",
+    genre: profile?.genre ?? "",
+    location: profile?.location ?? "",
+    avatar_url: profile?.avatar_url ?? "",
+  };
 }
 
-const SEED_USER: MockUser = { id: "mock-user-1", email: "demo@now-play.com" };
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(START_LOGGED_IN ? SEED_USER : null);
-  const [session, setSession] = useState<MockSession | null>(START_LOGGED_IN ? { user: SEED_USER } : null);
-  const [profile, setProfile] = useState<Profile | null>(
-    START_LOGGED_IN ? makeProfile(SEED_USER.id, "Demo Creator") : null
-  );
-  const [loading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function bootstrap() {
+      try {
+        const profileData = await apiClient.get<Profile>("/api/profile/");
+        if (!active) return;
+        const nextUser = { id: profileData.id, email: profileData.email ?? "" };
+        setUser(nextUser);
+        setSession({ user: nextUser });
+        setProfile(makeProfile(profileData, nextUser.id, profileData.stage_name) ?? null);
+      } catch {
+        if (!active) return;
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        clearAuthTokens();
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    void bootstrap();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
@@ -67,31 +87,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
 
     refreshProfile: async () => {
-      // No backend to refresh from — no-op for now.
+      try {
+        const nextProfile = await apiClient.get<Profile>("/api/profile/");
+        const nextUser = user ? { ...user, email: nextProfile.email ?? user.email } : { id: nextProfile.id, email: nextProfile.email ?? "" };
+        setUser(nextUser);
+        setSession({ user: nextUser });
+        setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+      } catch {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        clearAuthTokens();
+      }
     },
 
     signOut: async () => {
+      clearAuthTokens();
       setUser(null);
       setSession(null);
       setProfile(null);
     },
 
-    signIn: async (email: string, _password: string) => {
-      await new Promise((r) => setTimeout(r, 400)); // pretend it's async
-      const mockUser: MockUser = { id: "mock-user-1", email };
-      setUser(mockUser);
-      setSession({ user: mockUser });
-      setProfile(makeProfile(mockUser.id, email.split("@")[0]));
-      return { error: null };
+    signIn: async (email: string, password: string) => {
+      try {
+        const authResponse = await apiClient.post<{ access?: string; refresh?: string }>('/api/auth/login/', { email, password });
+        if (authResponse.access && authResponse.refresh) {
+          setAuthTokens(authResponse.access, authResponse.refresh);
+        }
+        const nextProfile = await apiClient.get<Profile>("/api/profile/");
+        const nextUser = { id: nextProfile.id, email: nextProfile.email ?? email };
+        setUser(nextUser);
+        setSession({ user: nextUser });
+        setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+        return { error: null };
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : "Sign in failed" };
+      }
     },
 
-    signUp: async (email: string, _password: string, stageName?: string) => {
-      await new Promise((r) => setTimeout(r, 400));
-      const mockUser: MockUser = { id: "mock-user-1", email };
-      setUser(mockUser);
-      setSession({ user: mockUser });
-      setProfile(makeProfile(mockUser.id, stageName || email.split("@")[0]));
-      return { error: null };
+    signUp: async (email: string, password: string, stageName?: string) => {
+      try {
+        const authResponse = await apiClient.post<{ access?: string; refresh?: string }>('/api/auth/register/', { email, password, stage_name: stageName });
+        if (authResponse.access && authResponse.refresh) {
+          setAuthTokens(authResponse.access, authResponse.refresh);
+        }
+        const nextProfile = await apiClient.get<Profile>("/api/profile/");
+        const nextUser = { id: nextProfile.id, email: nextProfile.email ?? email };
+        setUser(nextUser);
+        setSession({ user: nextUser });
+        setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+        return { error: null };
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : "Sign up failed" };
+      }
     },
   }), [user, session, profile, loading]);
 

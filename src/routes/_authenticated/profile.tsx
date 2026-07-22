@@ -1,46 +1,92 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { CreatorShell } from "@/components/creator-shell";
 import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
-import { albums, tracks, totalPlays, formatNumber } from "@/lib/mock-data";
 import { MapPin, Music, Disc3, Play } from "lucide-react";
+
+type ProfilePayload = {
+  id: string;
+  email?: string;
+  stage_name?: string;
+  biography?: string;
+  genre?: string;
+  location?: string;
+  avatar_url?: string;
+};
+
+type TrackPayload = {
+  id: string;
+  plays?: number;
+};
+
+type AlbumPayload = {
+  id: string;
+};
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Profile — Now Play for Creators" }] }),
   component: ProfilePage,
 });
 
+function formatNumber(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
 function ProfilePage() {
-  const { profile, user, refreshProfile } = useAuth();
+  const { profile: authProfile, user, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: profileData } = useQuery({
+    queryKey: ["profile"],
+    queryFn: () => apiClient.get<ProfilePayload>("/api/profile/"),
+  });
+  const { data: tracksData = [] } = useQuery({
+    queryKey: ["tracks"],
+    queryFn: () => apiClient.get<TrackPayload[]>("/api/tracks/"),
+  });
+  const { data: albumsData = [] } = useQuery({
+    queryKey: ["albums"],
+    queryFn: () => apiClient.get<AlbumPayload[]>("/api/albums/"),
+  });
+  const profile = profileData ?? authProfile ?? null;
   const [form, setForm] = useState({ stage_name: "", biography: "", genre: "", location: "" });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile) setForm({
-      stage_name: profile.stage_name ?? "",
-      biography: profile.biography ?? "",
-      genre: profile.genre ?? "",
-      location: profile.location ?? "",
-    });
+    if (profile) {
+      setForm({
+        stage_name: profile.stage_name ?? "",
+        biography: profile.biography ?? "",
+        genre: profile.genre ?? "",
+        location: profile.location ?? "",
+      });
+    }
   }, [profile]);
 
   async function save() {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update(form).eq("id", user.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    await refreshProfile();
-    toast.success("Profile saved");
+    try {
+      await apiClient.put("/api/profile/", form);
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await refreshProfile();
+      toast.success("Profile saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Profile update failed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const initials = (form.stage_name || user?.email || "NC").slice(0, 2).toUpperCase();
+  const totalPlays = (tracksData ?? []).reduce((sum, track) => sum + Number(track.plays ?? 0), 0);
 
   return (
     <CreatorShell>
-      {/* Header banner */}
       <div className="relative overflow-hidden rounded-3xl border border-border bg-hero-gradient p-8 md:p-12">
         <div className="flex flex-wrap items-end gap-6">
           <div className="grid h-28 w-28 md:h-36 md:w-36 place-items-center rounded-full bg-primary-gradient text-primary-foreground text-3xl font-black shadow-glow">
@@ -52,7 +98,7 @@ function ProfilePage() {
             <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               {form.genre && <span className="inline-flex items-center gap-1"><Music className="h-3.5 w-3.5" /> {form.genre}</span>}
               {form.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {form.location}</span>}
-              <span className="inline-flex items-center gap-1"><Disc3 className="h-3.5 w-3.5" /> {albums.length} releases</span>
+              <span className="inline-flex items-center gap-1"><Disc3 className="h-3.5 w-3.5" /> {(albumsData ?? []).length} releases</span>
               <span className="inline-flex items-center gap-1"><Play className="h-3.5 w-3.5" /> {formatNumber(totalPlays)} total plays</span>
             </div>
           </div>
@@ -96,8 +142,8 @@ function ProfilePage() {
           <div className="rounded-2xl border border-border bg-card p-6">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">At a glance</h3>
             <div className="mt-4 grid grid-cols-2 gap-4">
-              <Stat label="Songs" value={tracks.length.toString()} />
-              <Stat label="Albums" value={albums.length.toString()} />
+              <Stat label="Songs" value={(tracksData ?? []).length.toString()} />
+              <Stat label="Albums" value={(albumsData ?? []).length.toString()} />
               <Stat label="Plays" value={formatNumber(totalPlays)} />
               <Stat label="Genre" value={form.genre || "—"} />
             </div>

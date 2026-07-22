@@ -1,9 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { UploadCloud, Music, Image as ImageIcon, CheckCircle2 } from "lucide-react";
 import { CreatorShell } from "@/components/creator-shell";
-import { useLibrary } from "@/lib/library-context";
+import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
+
+type AlbumOption = {
+  id: string;
+  title: string;
+};
 
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({ meta: [{ title: "Upload — Now Play for Creators" }] }),
@@ -12,39 +18,38 @@ export const Route = createFileRoute("/_authenticated/upload")({
 
 function UploadPage() {
   const navigate = useNavigate();
-  const { albums, addTrack } = useLibrary();
+  const { data: albumsData = [] } = useQuery({
+    queryKey: ["albums"],
+    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
+  });
+  const albums = (albumsData ?? []).map((album) => ({ id: String(album.id ?? ""), title: String(album.title ?? "Untitled album") }));
   const [file, setFile] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("Electronic");
   const [releaseDate, setReleaseDate] = useState(new Date().toISOString().split("T")[0]);
-  const [albumId, setAlbumId] = useState(albums[0].id);
+  const [albumId, setAlbumId] = useState("");
   const [trackNumber, setTrackNumber] = useState(1);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function fileToDataUrl(f: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(String(r.result));
-      r.onerror = reject;
-      r.readAsDataURL(f);
-    });
-  }
+  useEffect(() => {
+    if (albums.length && !albumId) setAlbumId(albums[0].id);
+  }, [albums, albumId]);
 
   async function onCoverChange(f: File | null) {
     setCover(f);
-    if (f) setCoverPreview(await fileToDataUrl(f));
+    if (f) setCoverPreview(URL.createObjectURL(f));
     else setCoverPreview(null);
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault(); setDragging(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f && f.type.startsWith("audio/")) setFile(f);
+    const selectedFile = e.dataTransfer.files?.[0];
+    if (selectedFile && selectedFile.type.startsWith("audio/")) setFile(selectedFile);
     else toast.error("Please drop an audio file");
   }
 
@@ -53,16 +58,27 @@ function UploadPage() {
     if (!file) return toast.error("Please add an audio file");
     if (!title.trim()) return toast.error("Please add a title");
     setUploading(true); setProgress(0);
-    // Simulated upload progress
-    for (let p = 0; p <= 100; p += 5) {
-      await new Promise((r) => setTimeout(r, 60));
-      setProgress(p);
+    try {
+      for (let value = 0; value <= 100; value += 5) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        setProgress(value);
+      }
+      const formData = new FormData();
+      formData.append("title", title.trim());
+      formData.append("genre", genre);
+      formData.append("albumId", albumId);
+      formData.append("trackNumber", String(trackNumber));
+      if (file) formData.append("file", file);
+      if (cover) formData.append("cover", cover);
+      await apiClient.post("/api/tracks/", formData as unknown as BodyInit);
+      setProgress(100);
+      toast.success(`"${title}" uploaded to ${albums.find((album) => album.id === albumId)?.title ?? "your library"}`);
+      setTimeout(() => navigate({ to: "/library" }), 700);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Upload failed");
+    } finally {
+      setUploading(false);
     }
-    const coverDataUrl = cover ? await fileToDataUrl(cover) : undefined;
-    addTrack({ title: title.trim(), albumId, genre, trackNumber, coverDataUrl });
-    setUploading(false);
-    toast.success(`"${title}" uploaded to ${albums.find(a=>a.id===albumId)?.title}`);
-    setTimeout(() => navigate({ to: "/library" }), 700);
   }
 
   return (
