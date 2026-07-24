@@ -63,19 +63,27 @@ function normalizeTrack(payload: Record<string, unknown>): TrackRecord {
   };
 }
 
+function ensureArray<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown }).results)) {
+    return (data as { results: T[] }).results;
+  }
+  return [];
+}
+
 function AlbumsPage() {
   const player = usePlayer();
   const queryClient = useQueryClient();
-  const { data: albumsData = [] } = useQuery({
+  const { data: albumsData } = useQuery({
     queryKey: ["albums"],
-    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
+    queryFn: () => apiClient.get<unknown>("/api/albums/"),
   });
-  const { data: tracksData = [] } = useQuery({
+  const { data: tracksData } = useQuery({
     queryKey: ["tracks"],
-    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/tracks/"),
+    queryFn: () => apiClient.get<unknown>("/api/tracks/"),
   });
-  const albums = (albumsData ?? []).map((album) => normalizeAlbum(album as Record<string, unknown>));
-  const tracks = (tracksData ?? []).map((track) => normalizeTrack(track as Record<string, unknown>));
+  const albums = ensureArray<Record<string, unknown>>(albumsData).map(normalizeAlbum);
+  const tracks = ensureArray<Record<string, unknown>>(tracksData).map(normalizeTrack);
   const [activeId, setActiveId] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);

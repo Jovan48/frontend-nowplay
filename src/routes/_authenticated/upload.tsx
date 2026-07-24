@@ -17,14 +17,22 @@ export const Route = createFileRoute("/_authenticated/upload")({
   component: UploadPage,
 });
 
+function ensureArray<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown }).results)) {
+    return (data as { results: T[] }).results;
+  }
+  return [];
+}
+
 function UploadPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: albumsData = [] } = useQuery({
+  const { data: albumsData } = useQuery({
     queryKey: ["albums"],
-    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
+    queryFn: () => apiClient.get<unknown>("/api/albums/"),
   });
-  const albums = (albumsData ?? []).map((album) => ({ id: String(album.id ?? ""), title: String(album.title ?? "Untitled album") }));
+  const albums = ensureArray<Record<string, unknown>>(albumsData).map((album) => ({ id: String(album.id ?? ""), title: String(album.title ?? "Untitled album") }));
   const [releaseType, setReleaseType] = useState<"single" | "album">("single");
   const [file, setFile] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);

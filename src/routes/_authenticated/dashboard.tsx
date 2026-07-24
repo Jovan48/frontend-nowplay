@@ -89,16 +89,24 @@ function normalizeAlbum(payload: Record<string, unknown>): DashboardAlbum {
   };
 }
 
+function ensureArray<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === "object" && "results" in data && Array.isArray((data as { results: unknown }).results)) {
+    return (data as { results: T[] }).results;
+  }
+  return [];
+}
+
 function Dashboard() {
   const player = usePlayer();
   const { profile } = useAuth();
-  const { data: tracksData = [] } = useQuery({
+  const { data: tracksData } = useQuery({
     queryKey: ["tracks"],
-    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/tracks/"),
+    queryFn: () => apiClient.get<unknown>("/api/tracks/"),
   });
-  const { data: albumsData = [] } = useQuery({
+  const { data: albumsData } = useQuery({
     queryKey: ["albums"],
-    queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
+    queryFn: () => apiClient.get<unknown>("/api/albums/"),
   });
   const { data: analyticsData } = useQuery({
     queryKey: ["analytics"],
@@ -115,8 +123,8 @@ function Dashboard() {
     },
   });
 
-  const tracks = (tracksData ?? []).map((track) => normalizeTrack(track as Record<string, unknown>));
-  const albums = (albumsData ?? []).map((album) => normalizeAlbum(album as Record<string, unknown>));
+  const tracks = ensureArray<Record<string, unknown>>(tracksData).map(normalizeTrack);
+  const albums = ensureArray<Record<string, unknown>>(albumsData).map(normalizeAlbum);
   const recent = tracks.slice(0, 6);
   const name = profile?.stage_name || "Creator";
   const totalPlays = analyticsData?.totalPlays ?? tracks.reduce((sum, track) => sum + track.plays, 0);
