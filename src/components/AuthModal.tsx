@@ -332,7 +332,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground text-center m-0">
-              Demo tip: any code works — try 000000 to see the error state.
+              Use your real email and verification code to continue.
             </p>
           </div>
         )}
