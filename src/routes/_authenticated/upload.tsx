@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { UploadCloud, Music, Image as ImageIcon, CheckCircle2 } from "lucide-react";
+import { UploadCloud, Music, Image as ImageIcon, CheckCircle2, Plus } from "lucide-react";
 import { CreatorShell } from "@/components/creator-shell";
 import { apiClient } from "@/lib/api-client";
+import { CreateAlbumDialog } from "@/routes/_authenticated/albums";
 import { toast } from "sonner";
 
 type AlbumOption = {
@@ -18,11 +19,13 @@ export const Route = createFileRoute("/_authenticated/upload")({
 
 function UploadPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: albumsData = [] } = useQuery({
     queryKey: ["albums"],
     queryFn: () => apiClient.get<Record<string, unknown>[]>("/api/albums/"),
   });
   const albums = (albumsData ?? []).map((album) => ({ id: String(album.id ?? ""), title: String(album.title ?? "Untitled album") }));
+  const [releaseType, setReleaseType] = useState<"single" | "album">("single");
   const [file, setFile] = useState<File | null>(null);
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -34,6 +37,7 @@ function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [createAlbumOpen, setCreateAlbumOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -57,6 +61,7 @@ function UploadPage() {
     e.preventDefault();
     if (!file) return toast.error("Please add an audio file");
     if (!title.trim()) return toast.error("Please add a title");
+    if (releaseType === "album" && !albumId) return toast.error("Please select an album or create a new one");
     setUploading(true); setProgress(0);
     try {
       for (let value = 0; value <= 100; value += 5) {
@@ -66,13 +71,18 @@ function UploadPage() {
       const formData = new FormData();
       formData.append("title", title.trim());
       formData.append("genre", genre);
-      formData.append("albumId", albumId);
-      formData.append("trackNumber", String(trackNumber));
+      formData.append("release_type", releaseType);
+      if (releaseType === "album" && albumId) {
+        formData.append("albumId", albumId);
+        formData.append("trackNumber", String(trackNumber));
+      } else {
+        formData.append("trackNumber", "1");
+      }
       if (file) formData.append("file", file);
       if (cover) formData.append("cover", cover);
       await apiClient.post("/api/tracks/", formData as unknown as BodyInit);
       setProgress(100);
-      toast.success(`"${title}" uploaded to ${albums.find((album) => album.id === albumId)?.title ?? "your library"}`);
+      toast.success(`"${title}" uploaded as a ${releaseType}!`);
       setTimeout(() => navigate({ to: "/library" }), 700);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Upload failed");
@@ -118,12 +128,12 @@ function UploadPage() {
                   {coverPreview ? <img src={coverPreview} alt="Cover preview" className="h-full w-full object-cover" /> : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold">Album cover</div>
+                  <div className="text-sm font-semibold">Cover Artwork</div>
                   <div className="text-xs text-muted-foreground">JPG or PNG, 1400×1400 recommended</div>
                 </div>
               </div>
               <input type="file" accept="image/*" hidden onChange={(e) => onCoverChange(e.target.files?.[0] ?? null)} />
-              <div className="mt-3 grid place-items-center rounded-md border border-dashed border-border py-3 text-xs text-muted-foreground">
+              <div className="mt-3 grid place-items-center rounded-md border border-dashed border-border py-3 text-xs text-muted-foreground cursor-pointer hover:bg-elevated">
                 Click to choose image
               </div>
             </label>
@@ -132,6 +142,34 @@ function UploadPage() {
           {/* Right: metadata */}
           <div className="space-y-4">
             <div className="grid gap-4 rounded-2xl border border-border bg-card p-6">
+              {/* Release Type Toggle */}
+              <Field label="Release Type">
+                <div className="mt-1 flex rounded-lg bg-elevated p-1 border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setReleaseType("single")}
+                    className={`flex-1 rounded-md py-2 text-xs font-bold transition ${
+                      releaseType === "single"
+                        ? "bg-card text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    🎵 Single
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReleaseType("album")}
+                    className={`flex-1 rounded-md py-2 text-xs font-bold transition ${
+                      releaseType === "album"
+                        ? "bg-card text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    💿 Album Track
+                  </button>
+                </div>
+              </Field>
+
               <Field label="Song title">
                 <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120}
                   className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
@@ -149,17 +187,35 @@ function UploadPage() {
                   <input type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none" />
                 </Field>
               </div>
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-                <Field label="Album">
-                  <select value={albumId} onChange={(e) => setAlbumId(e.target.value)} className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none">
-                    {albums.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
-                  </select>
-                </Field>
-                <Field label="Track #">
-                  <input type="number" min={1} value={trackNumber} onChange={(e) => setTrackNumber(Number(e.target.value))}
-                    className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none" />
-                </Field>
-              </div>
+
+              {releaseType === "album" ? (
+                <div className="grid gap-4 sm:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+                  <Field label="Album">
+                    <div className="flex gap-2">
+                      <select value={albumId} onChange={(e) => setAlbumId(e.target.value)} className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none">
+                        {albums.length === 0 && <option value="">No albums available</option>}
+                        {albums.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setCreateAlbumOpen(true)}
+                        className="inline-flex items-center gap-1 shrink-0 rounded-lg border border-border bg-elevated px-3 h-11 text-xs font-semibold hover:bg-card transition"
+                        title="Create new album"
+                      >
+                        <Plus className="h-4 w-4" /> New
+                      </button>
+                    </div>
+                  </Field>
+                  <Field label="Track #">
+                    <input type="number" min={1} value={trackNumber} onChange={(e) => setTrackNumber(Number(e.target.value))}
+                      className="h-11 w-full rounded-lg border border-border bg-elevated px-3 text-sm outline-none" />
+                  </Field>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-elevated/40 p-3 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">Single Release Mode:</span> This track will be published as a standalone single.
+                </div>
+              )}
             </div>
 
             {(uploading || progress > 0) && (
@@ -190,6 +246,18 @@ function UploadPage() {
           </div>
         </form>
       </div>
+
+      <CreateAlbumDialog
+        open={createAlbumOpen}
+        onOpenChange={setCreateAlbumOpen}
+        onSuccess={(newAlbum) => {
+          setCreateAlbumOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["albums"] });
+          if (newAlbum?.id) {
+            setAlbumId(String(newAlbum.id));
+          }
+        }}
+      />
     </CreatorShell>
   );
 }

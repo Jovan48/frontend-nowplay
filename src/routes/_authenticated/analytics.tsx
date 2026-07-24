@@ -41,7 +41,13 @@ function formatNumber(n: number): string {
 function Analytics() {
   const { data: analyticsData } = useQuery({
     queryKey: ["analytics"],
-    queryFn: () => apiClient.get<AnalyticsPayload>("/api/analytics/"),
+    queryFn: async () => {
+      try {
+        return await apiClient.get<AnalyticsPayload>("/api/analytics/artist/summary/");
+      } catch {
+        return await apiClient.get<AnalyticsPayload>("/api/analytics/");
+      }
+    },
   });
   const { data: tracksData = [] } = useQuery({
     queryKey: ["tracks"],
