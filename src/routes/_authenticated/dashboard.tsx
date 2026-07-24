@@ -102,7 +102,17 @@ function Dashboard() {
   });
   const { data: analyticsData } = useQuery({
     queryKey: ["analytics"],
-    queryFn: () => apiClient.get<AnalyticsSummary>("/api/analytics/"),
+    queryFn: async () => {
+      try {
+        return await apiClient.get<AnalyticsSummary>("/api/analytics/artist/summary/");
+      } catch {
+        try {
+          return await apiClient.get<AnalyticsSummary>("/api/analytics/");
+        } catch {
+          return { totalPlays: 0, monthlyListeners: [] };
+        }
+      }
+    },
   });
 
   const tracks = (tracksData ?? []).map((track) => normalizeTrack(track as Record<string, unknown>));
@@ -209,7 +219,7 @@ function Dashboard() {
             <div key={a.id} className="hover-lift rounded-xl border border-border bg-card p-3">
               <img src={a.cover} alt="" className="aspect-square w-full rounded-lg object-cover" />
               <div className="mt-3 truncate text-sm font-semibold">{a.title}</div>
-              <div className="truncate text-xs text-muted-foreground">{a.genre} · {new Date(a.releasedAt).getFullYear()}</div>
+              <div className="truncate text-xs text-muted-foreground">{a.genre} · {a.releasedAt ? new Date(a.releasedAt).getFullYear() : new Date().getFullYear()}</div>
             </div>
           ))}
         </div>
