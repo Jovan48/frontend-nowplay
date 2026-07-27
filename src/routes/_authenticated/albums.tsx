@@ -92,9 +92,9 @@ function AlbumsPage() {
     if (!albums.length) return;
     setActiveId((current) => (current && albums.some((album) => album.id === current) ? current : albums[0].id));
   }, [albums]);
-
+  
   const active = albums.find((album) => album.id === activeId) ?? albums[0];
-  const activeTracks = tracks.filter((track) => track.albumId === active?.id).sort((a, b) => a.trackNumber - b.trackNumber);
+  const activeTracks = active ? tracks.filter((track) => track.albumId === active.id).sort((a, b) => a.trackNumber - b.trackNumber) : [];
   const totalPlays = activeTracks.reduce((sum, track) => sum + track.plays, 0);
 
   return (
@@ -109,81 +109,99 @@ function AlbumsPage() {
         </button>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {albums.map((album) => (
-            <button
-              key={album.id}
-              onClick={() => setActiveId(album.id)}
-              className={`hover-lift text-left rounded-2xl border p-3 transition-colors ${
-                album.id === activeId ? "border-primary/60 bg-elevated" : "border-border bg-card"
-              }`}
-            >
-              <img src={album.cover} alt="" className="aspect-square w-full rounded-lg object-cover" />
-              <div className="mt-3 truncate text-sm font-semibold">{album.title}</div>
-              <div className="truncate text-xs text-muted-foreground">{album.genre} · {new Date(album.releasedAt).getFullYear()}</div>
-            </button>
-          ))}
+      {!active ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-primary/10 text-primary mb-4">
+            <Plus className="h-8 w-8" />
+          </div>
+          <h3 className="text-xl font-bold">No albums yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+            You haven't created any albums in your catalog. Create your first album to organize your tracks.
+          </p>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary-gradient px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:brightness-110 transition cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Create Your First Album
+          </button>
         </div>
+      ) : (
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {albums.map((album) => (
+              <button
+                key={album.id}
+                onClick={() => setActiveId(album.id)}
+                className={`hover-lift text-left rounded-2xl border p-3 transition-colors ${
+                  album.id === activeId ? "border-primary/60 bg-elevated" : "border-border bg-card"
+                }`}
+              >
+                <img src={album.cover} alt="" className="aspect-square w-full rounded-lg object-cover" />
+                <div className="mt-3 truncate text-sm font-semibold">{album.title}</div>
+                <div className="truncate text-xs text-muted-foreground">{album.genre} · {album.releasedAt ? new Date(album.releasedAt).getFullYear() : new Date().getFullYear()}</div>
+              </button>
+            ))}
+          </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex flex-wrap items-start gap-5">
-            <img src={active.cover} alt="" className="h-32 w-32 rounded-xl object-cover shadow-card-elevated" />
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Album</div>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h2>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {active.artist} · {active.genre} · {new Date(active.releasedAt).toLocaleDateString(undefined, { year:"numeric", month:"long", day:"numeric"})}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => player.play(activeTracks[0], activeTracks)} className="inline-flex items-center gap-2 rounded-full bg-primary-gradient px-4 py-2 text-xs font-semibold text-primary-foreground shadow-glow">
-                  <Play className="h-3.5 w-3.5" /> Play
-                </button>
-                <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:bg-elevated">
-                  <Pencil className="h-3.5 w-3.5" /> Edit
-                </button>
-                <button onClick={() => toast.success("Album archived (mock)" )} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-destructive hover:bg-elevated">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </button>
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-start gap-5">
+              <img src={active.cover} alt="" className="h-32 w-32 rounded-xl object-cover shadow-card-elevated" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Album</div>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h2>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  {active.artist} · {active.genre} · {active.releasedAt ? new Date(active.releasedAt).toLocaleDateString(undefined, { year:"numeric", month:"long", day:"numeric"}) : "Unreleased"}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button onClick={() => activeTracks[0] && player.play(activeTracks[0], activeTracks)} className="inline-flex items-center gap-2 rounded-full bg-primary-gradient px-4 py-2 text-xs font-semibold text-primary-foreground shadow-glow">
+                    <Play className="h-3.5 w-3.5" /> Play
+                  </button>
+                  <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:bg-elevated">
+                    <Pencil className="h-3.5 w-3.5" /> Edit
+                  </button>
+                  <button onClick={() => toast.success("Album archived (mock)")} className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold text-destructive hover:bg-elevated">
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
-            <div>{activeTracks.length} tracks</div>
-            <div>{formatNumber(totalPlays)} total plays</div>
-          </div>
+            <div className="mt-6 flex items-center justify-between text-xs text-muted-foreground">
+              <div>{activeTracks.length} tracks</div>
+              <div>{formatNumber(totalPlays)} total plays</div>
+            </div>
 
-          <ul className="mt-3 divide-y divide-border rounded-xl border border-border overflow-hidden">
-            {activeTracks.map((track) => {
-              const isCurrent = player.current?.id === track.id;
-              return (
-              <li key={track.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-elevated ${isCurrent ? "bg-elevated/60" : ""}`}>
-                <div className="w-6 text-center text-xs tabular-nums">
-                  {isCurrent ? (
-                    <NowPlayingBars playing={player.isPlaying} />
-                  ) : (
-                    <span className="text-muted-foreground">{track.trackNumber}</span>
-                  )}
-                </div>
-                <button onClick={() => player.play(track, activeTracks)} className="grid h-8 w-8 place-items-center rounded-full bg-elevated hover:bg-primary hover:text-primary-foreground transition">
-                  <Play className="h-3.5 w-3.5" />
-                </button>
-                <img src={track.cover} alt="" className="h-9 w-9 rounded object-cover" />
-                <div className="min-w-0 flex-1">
-                  <div className={`truncate text-sm font-semibold ${isCurrent ? "text-primary" : ""}`}>
-                    {track.title}
-                    {isCurrent && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary"><Volume2 className="h-3 w-3" /> Now playing</span>}
-                  </div>
-                </div>
-                <div className="hidden sm:block text-xs tabular-nums text-muted-foreground">{formatNumber(track.plays)}</div>
-                <div className="text-xs tabular-nums text-muted-foreground">{track.duration}</div>
-              </li>
-              );
-            })}
-          </ul>
+            <ul className="mt-3 divide-y divide-border rounded-xl border border-border overflow-hidden">
+              {activeTracks.map((track) => {
+                const isCurrent = player.current?.id === track.id;
+                return (
+                  <li key={track.id} className={`flex items-center gap-4 px-4 py-3 hover:bg-elevated ${isCurrent ? "bg-elevated/60" : ""}`}>
+                    <div className="w-6 text-center text-xs tabular-nums">
+                      {isCurrent ? (
+                        <NowPlayingBars playing={player.isPlaying} />
+                      ) : (
+                        <span className="text-muted-foreground">{track.trackNumber}</span>
+                      )}
+                    </div>
+                    <button onClick={() => player.play(track, activeTracks)} className="grid h-8 w-8 place-items-center rounded-full bg-elevated hover:bg-primary hover:text-primary-foreground transition">
+                      <Play className="h-3.5 w-3.5" />
+                    </button>
+                    <img src={track.cover} alt="" className="h-9 w-9 rounded object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <div className={`truncate text-sm font-semibold ${isCurrent ? "text-primary" : ""}`}>
+                        {track.title}
+                        {isCurrent && <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary"><Volume2 className="h-3 w-3" /> Now playing</span>}
+                      </div>
+                    </div>
+                    <div className="hidden sm:block text-xs tabular-nums text-muted-foreground">{formatNumber(track.plays)}</div>
+                    <div className="text-xs tabular-nums text-muted-foreground">{track.duration}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
 
       {active && (
         <EditAlbumDialog
