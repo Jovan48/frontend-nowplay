@@ -1,8 +1,6 @@
 type JsonRecord = Record<string, unknown>;
 
-const DEFAULT_API_URL = "import.meta.env.VITE_API_URL" || "http://localhost:8000";
-
-export DEFAULT_API_URL;
+const DEFAULT_API_URL = "http://localhost:8000";
 
 function getBaseUrl() {
   const configuredUrl = (
