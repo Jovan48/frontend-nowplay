@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyMagicLinkRouteImport } from './routes/verify-magic-link'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +22,16 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAlbumsRouteImport } from './routes/_authenticated/albums'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 
+const VerifyMagicLinkRoute = VerifyMagicLinkRouteImport.update({
+  id: '/verify-magic-link',
+  path: '/verify-magic-link',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -73,6 +85,8 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/login': typeof LoginRoute
+  '/verify-magic-link': typeof VerifyMagicLinkRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/albums': typeof AuthenticatedAlbumsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
@@ -84,6 +98,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/login': typeof LoginRoute
+  '/verify-magic-link': typeof VerifyMagicLinkRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/albums': typeof AuthenticatedAlbumsRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
@@ -97,6 +113,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/login': typeof LoginRoute
+  '/verify-magic-link': typeof VerifyMagicLinkRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/albums': typeof AuthenticatedAlbumsRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
@@ -110,6 +128,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/login'
+    | '/verify-magic-link'
     | '/admin'
     | '/albums'
     | '/analytics'
@@ -121,6 +141,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/login'
+    | '/verify-magic-link'
     | '/admin'
     | '/albums'
     | '/analytics'
@@ -133,6 +155,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/login'
+    | '/verify-magic-link'
     | '/_authenticated/admin'
     | '/_authenticated/albums'
     | '/_authenticated/analytics'
@@ -146,10 +170,26 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LoginRoute: typeof LoginRoute
+  VerifyMagicLinkRoute: typeof VerifyMagicLinkRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-magic-link': {
+      id: '/verify-magic-link'
+      path: '/verify-magic-link'
+      fullPath: '/verify-magic-link'
+      preLoaderRoute: typeof VerifyMagicLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -251,6 +291,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  LoginRoute: LoginRoute,
+  VerifyMagicLinkRoute: VerifyMagicLinkRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

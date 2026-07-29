@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { apiClient, clearAuthTokens, setAuthTokens } from "./api-client";
+import { apiClient, clearAuthTokens, getAccessToken, setAuthTokens } from "./api-client";
 
 type AuthUser = {
   id: string;
@@ -25,7 +25,10 @@ type AuthContextValue = {
   session: AuthSession | null;
   profile: Profile | null;
   loading: boolean;
+  isAuthenticated: boolean;
   refreshProfile: () => Promise<void>;
+  login: (accessToken: string, refreshToken: string) => Promise<{ error: string | null }>;
+  logout: () => Promise<void>;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, stageName?: string) => Promise<{ error: string | null }>;
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => Boolean(getAccessToken()));
 
   useEffect(() => {
     let active = true;
@@ -63,11 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setSession({ user: nextUser });
         setProfile(makeProfile(profileData, nextUser.id, profileData.stage_name) ?? null);
+        setIsAuthenticated(true);
       } catch {
         if (!active) return;
         setUser(null);
         setSession(null);
         setProfile(null);
+        setIsAuthenticated(false);
         clearAuthTokens();
       } finally {
         if (active) setLoading(false);
@@ -85,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     loading,
+    isAuthenticated,
 
     refreshProfile: async () => {
       try {
@@ -93,19 +100,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setSession({ user: nextUser });
         setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+        setIsAuthenticated(true);
       } catch {
         setUser(null);
         setSession(null);
         setProfile(null);
+        setIsAuthenticated(false);
         clearAuthTokens();
       }
     },
 
-    signOut: async () => {
+    login: async (accessToken: string, refreshToken: string) => {
+      if (!accessToken || !refreshToken) {
+        return { error: "The provided tokens are invalid." };
+      }
+
+      try {
+        setAuthTokens(accessToken, refreshToken);
+        const nextProfile = await apiClient.get<Profile>("/api/profile/");
+        const nextUser = { id: nextProfile.id, email: nextProfile.email ?? "" };
+        setUser(nextUser);
+        setSession({ user: nextUser });
+        setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+        setIsAuthenticated(true);
+        return { error: null };
+      } catch (error) {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsAuthenticated(false);
+        clearAuthTokens();
+        return { error: error instanceof Error ? error.message : "Unable to finish sign in." };
+      }
+    },
+
+    logout: async () => {
       clearAuthTokens();
       setUser(null);
       setSession(null);
       setProfile(null);
+      setIsAuthenticated(false);
+    },
+
+    signOut: async () => {
+      await value.logout();
     },
 
     signIn: async (email: string, password: string) => {
@@ -136,12 +174,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setSession({ user: nextUser });
         setProfile(makeProfile(nextProfile, nextUser.id, nextProfile.stage_name) ?? null);
+        setIsAuthenticated(true);
         return { error: null };
       } catch (error) {
+        setIsAuthenticated(false);
         return { error: error instanceof Error ? error.message : "Sign up failed" };
       }
     },
-  }), [user, session, profile, loading]);
+  }), [isAuthenticated, loading, profile, session, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

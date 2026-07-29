@@ -121,12 +121,11 @@ function Index() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link to="/auth" search={{ mode: "signin" }} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Log In
             </Link>
             <Link
-              to="/auth"
-              search={{ mode: "signup" }}
+              to="/login"
               className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover-lift transition-colors"
             >
               Sign Up
@@ -150,12 +149,11 @@ function Index() {
               </a>
             ))}
             <hr className="border-border" />
-            <Link to="/auth" search={{ mode: "signin" }} onClick={() => setMenuOpen(false)} className="text-muted-foreground text-left">
+            <Link to="/login" onClick={() => setMenuOpen(false)} className="text-muted-foreground text-left">
               Log In
             </Link>
             <Link
-              to="/auth"
-              search={{ mode: "signup" }}
+              to="/login"
               onClick={() => setMenuOpen(false)}
               className="px-5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold text-center"
             >
@@ -190,8 +188,7 @@ function Index() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                to="/auth"
-                search={{ mode: "signup" }}
+                to="/login"
                 className="flex items-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold play-button-glow"
               >
                 Get Started Free
