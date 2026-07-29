@@ -63,7 +63,7 @@ async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> 
 }
 
 export async function requestMagicLink(email: string) {
-  return requestJson<{ detail?: string }>('/api/accounts/auth/magic-link/', {
+  return requestJson<{ detail?: string }>('/api/auth/magic-link/', {
     method: "POST",
     body: JSON.stringify({ email }),
     headers: {
@@ -73,7 +73,7 @@ export async function requestMagicLink(email: string) {
 }
 
 export async function verifyMagicLink(token: string) {
-  return requestJson<{ access: string; refresh: string; is_new_user: boolean }>('/api/accounts/auth/verify-magic-link/', {
+  return requestJson<{ access: string; refresh: string; is_new_user: boolean }>('/api/auth/verify-magic-link/', {
     method: "POST",
     body: JSON.stringify({ token }),
     headers: {
