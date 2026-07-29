@@ -1,6 +1,6 @@
 type JsonRecord = Record<string, unknown>;
 
-const DEFAULT_API_URL = "http://localhost:8000";
+const DEFAULT_API_URL = "https://now-play-backend-production.up.railway.app";
 
 function getBaseUrl() {
   const configuredUrl = (
@@ -29,32 +29,46 @@ async function parseErrorMessage(response: Response) {
 }
 
 async function requestJson<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(buildUrl(path), {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
+  const candidatePaths = path.endsWith("/") ? [path, path.replace(/\/$/, "")] : [path, `${path}/`];
 
-  if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+  let lastError: Error | null = null;
+
+  for (const candidatePath of candidatePaths) {
+    const response = await fetch(buildUrl(candidatePath), {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers ?? {}),
+      },
+    });
+
+    if (response.ok) {
+      const text = await response.text();
+      if (!text) return null as T;
+
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        return text as T;
+      }
+    }
+
+    lastError = new Error(await parseErrorMessage(response));
+    if (response.status !== 404) {
+      throw lastError;
+    }
   }
 
-  const text = await response.text();
-  if (!text) return null as T;
-
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return text as T;
-  }
+  throw lastError ?? new Error("Request failed");
 }
 
 export async function requestMagicLink(email: string) {
   return requestJson<{ detail?: string }>('/api/accounts/auth/magic-link/', {
     method: "POST",
     body: JSON.stringify({ email }),
+    headers: {
+      Accept: "application/json",
+    },
   });
 }
 
@@ -62,5 +76,8 @@ export async function verifyMagicLink(token: string) {
   return requestJson<{ access: string; refresh: string; is_new_user: boolean }>('/api/accounts/auth/verify-magic-link/', {
     method: "POST",
     body: JSON.stringify({ token }),
+    headers: {
+      Accept: "application/json",
+    },
   });
 }
