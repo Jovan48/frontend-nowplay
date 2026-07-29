@@ -81,3 +81,44 @@ export async function verifyMagicLink(token: string) {
     },
   });
 }
+
+//login and register with password functions
+
+export async function loginWithPassword(email: string, password: string): Promise<{
+  access: string;
+  refresh: string;
+}> {
+  const res = await fetch(`${getBaseUrl()}/auth/login/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    // Handle the specific "not verified" error from your backend
+    if (error.detail === 'Unable to log in with provided credentials.') {
+      throw new Error('Please verify your email first. Check your inbox for a verification link.');
+    }
+    throw new Error(error.detail || error.non_field_errors?.[0] || 'Login failed.');
+  }
+
+  return res.json();
+}
+
+export async function registerWithPassword(email: string, password: string): Promise<{
+  detail: string;
+}> {
+  const res = await fetch(`${getBaseUrl()}/auth/register/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }), // Add other fields if your serializer requires them
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.detail || error.email?.[0] || 'Registration failed.');
+  }
+
+  return res.json();
+}
